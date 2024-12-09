@@ -1,5 +1,20 @@
 ## GIS Tool
 
+## Summary List of Changes
+
+Refactored Track and TrackSegment to improve readability and align with SRP better
+Added GeoJsonFeature as a base class for a common interface (property and geometry) for subclasses Waypoint and Track and moved shared logic to this base class
+Refactored Waypoint to inherit from GeoJsonFeature and updated properties and geometry to define its specific data structure
+Refactored Track Class to also inherit from GeoJsonFeature and updated its properites and geometry methods
+Updated World Class to return a hash insetad of formatted string
+Updated Tests to align with refactored code and ensure tracks and waypoitns and tested with multiple features
+Fixed up bug between expected and actual output formats after modifying tests and classes (took forever to identify problem)
+
+
+
+
+
+
 Geographic Information Systems program.
 
 This is a tool to work with geographic data. It takes a number of

@@ -1,18 +1,41 @@
 #!/usr/bin/env ruby
 
-class Track
+require 'json'
+
+class GeoJsonFeature
+  def to_geojson
+    {
+      "type" => "Feature",
+      "properties"=> properties.compact,
+      "geometry" => geometry.compact
+    }
+  end
+
+  def properties
+    raise NotImplementedError, "Subclasses must define properties"
+  end
+
+  def geometry
+    raise NotImplementedError, "Subclasses must define geometry"
+  end
+end
+
+
+
+class Track < GeoJsonFeature
   def initialize(segments, name=nil)
     @name = name
     @segments = segments.map { |s| TrackSegment.new(s) }
     end
 
-    def to_geojson
+    def properties
+      { "title" => @name }
+    end
+
+    def geometry
       {
-        "type": "Feature",
-        "properties": {title: @name}.compact,
-        "geometry": {
-          "type": "LineString",
-          "coordinates": @segments.map(&:coordinates_as_array) }
+        "type" => "MultiLineString",
+        "coordinates" => @segments.map(&:coordinates_as_array)
       }
     end
   end
@@ -39,53 +62,52 @@ class Point
   end
 end
 
-class Waypoint
-attr_reader :lat, :lon, :ele, :name, :type
 
-  def initialize(lon, lat, ele=nil, name=nil, type=nil)
+class Waypoint < GeoJsonFeature
+attr_reader :lat, :lon, :ele, :name, :icon
+
+  def initialize(lon, lat, ele=nil, name=nil, icon=nil)
     @lat = lat
     @lon = lon
     @ele = ele
     @name = name
-    @type = type
+    @icon = icon
   end
 
-  def to_geojson
+  def properties
+    { "title" => @name, "icon" => @icon }
+  end
+
+  def geometry
     {
-      "type": "Feature",
-      geometry: {
-        "type": "Point",
-        "coordinates": [@lon, @lat, @ele].compact
-      },
-      "properties": {
-        title: @name,
-        type: @type
-      }.compact
+      "type" => "Point",
+      "coordinates" => [@lon, @lat, @ele].compact
     }
   end
 end
 
 class World
-def initialize(name, things)
-  @name = name
-  @features = things
-end
-  def add_feature(f)
-    @features.append(t)
+  def initialize(name, things)
+    @name = name
+    @features = things
+  end
+
+  def add_feature(feature)
+    @features << feature
   end
 
   def to_geojson
-    {
-      "type": "FeatureCollection",
-      "features": @features.map(&:to_geojson)
-    }
+      {
+      "type" => "FeatureCollection",
+      "features" => @features.map(&:to_geojson)
+      } 
   end
 end
 
 def main()
   w = Waypoint.new(-121.5, 45.5, 30, "home", "flag")
   w2 = Waypoint.new(-121.5, 45.6, nil, "store", "dot")
-  
+
   ts1 = [
   Point.new(-122, 45),
   Point.new(-122, 46),
@@ -104,7 +126,7 @@ def main()
 
   world = World.new("My Data", [w, w2, t, t2])
 
-  puts world.to_geojson()
+  puts JSON.pretty_generate(world.to_geojson)
 end
 
 if File.identical?(__FILE__, $0)
